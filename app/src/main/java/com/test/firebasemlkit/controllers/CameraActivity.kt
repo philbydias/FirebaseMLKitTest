@@ -7,16 +7,36 @@ import android.os.Bundle
 import android.support.v4.app.ActivityCompat
 import android.support.v4.content.ContextCompat
 import android.support.v7.app.AppCompatActivity
+import android.util.Log
 import android.view.View
 import android.widget.Toast
 import com.test.firebasemlkit.R
+import com.test.firebasemlkit.use_cases.PhotoStorageProvider
+import com.test.firebasemlkit.use_cases.TempPhotoStorageService
 import com.test.firebasemlkit.views.CameraPreviewView
 import kotlinx.android.synthetic.main.activity_camera.*
+import java.io.File
 
-class CameraActivity : AppCompatActivity() {
-    private val CODE_PERMISSIONS_CAMERA = 1
+class CameraActivity: AppCompatActivity() {
+    private val codePermissionsCamera = 1
 
+    private var storageProvider: PhotoStorageProvider? = null
     private var preview: CameraPreviewView? = null
+
+    init {
+        storageProvider = TempPhotoStorageService( { successFilePath ->
+            Log.d("AppLogs", "File stored at: $successFilePath")
+            successFilePath?.let { filePath ->
+                Log.d("AppLogs", "Retrieving from ${File(filePath)}")
+                storageProvider?.retrievePhoto(File(filePath))
+            }
+        }, { bitmap ->
+            Log.d("AppLogs", "Retrieved bitmap: ${bitmap == null}")
+            bitmap.let { validBitmap ->
+                image_view_camera_photo.setImageBitmap(validBitmap)
+            }
+        })
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -27,7 +47,7 @@ class CameraActivity : AppCompatActivity() {
         super.onResume()
 
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.CAMERA), CODE_PERMISSIONS_CAMERA)
+            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.CAMERA), codePermissionsCamera)
         } else {
             initializeCamera()
         }
@@ -42,7 +62,7 @@ class CameraActivity : AppCompatActivity() {
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
         when (requestCode) {
-            CODE_PERMISSIONS_CAMERA -> {
+            codePermissionsCamera -> {
                 // If request is cancelled, the result arrays are empty.
                 if ((grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED)) {
                     initializeCamera()
@@ -64,8 +84,8 @@ class CameraActivity : AppCompatActivity() {
 
         button_camera_take_photo.setOnClickListener { _: View ->
             preview?.let { previewView ->
-                previewView.takeCurrentPicture {
-                    image_view_camera_photo.setImageBitmap(it)
+                storageProvider?.let { provider ->
+                    previewView.takeCurrentPicture(applicationContext.filesDir, provider)
                 }
             }
         }

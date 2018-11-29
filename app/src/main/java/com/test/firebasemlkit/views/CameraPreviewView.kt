@@ -6,6 +6,8 @@ import android.graphics.BitmapFactory
 import android.hardware.Camera
 import android.view.SurfaceHolder
 import android.view.SurfaceView
+import com.test.firebasemlkit.use_cases.PhotoStorageProvider
+import java.io.File
 import java.io.IOException
 
 class CameraPreviewView(context: Context, private val camera: Camera) : SurfaceView(context), SurfaceHolder.Callback {
@@ -51,10 +53,10 @@ class CameraPreviewView(context: Context, private val camera: Camera) : SurfaceV
         }
     }
 
-    fun takeCurrentPicture(delegate: (Bitmap) -> Unit) {
+    fun takeCurrentPicture(folder: File, storageProvider: PhotoStorageProvider) {
         camera.takePicture(null, null, { bytes: ByteArray, camera: Camera ->
             camera.startPreview()
-            delegate(BitmapFactory.decodeByteArray(bytes, 0, bytes.size))
+            storageProvider.storePhoto(bytes, folder)
         })
     }
 

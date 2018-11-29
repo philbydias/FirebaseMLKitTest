@@ -8,5 +8,5 @@ typealias PhotoRetrievalCompletion = (bitmap: Bitmap?) -> Unit
 
 interface PhotoStorageProvider {
     fun storePhoto(withByteArray: ByteArray, inFolder: File)
-    fun retrievePhoto(from: File)
+    fun retrievePhoto(from: File, usingRotation: Int)
 }

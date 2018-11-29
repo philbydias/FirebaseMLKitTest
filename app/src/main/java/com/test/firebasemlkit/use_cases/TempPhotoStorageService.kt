@@ -1,11 +1,24 @@
 package com.test.firebasemlkit.use_cases
 
+import android.app.Activity
+import android.content.Context
+import android.content.Context.CAMERA_SERVICE
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.hardware.camera2.CameraCharacteristics
+import android.hardware.camera2.CameraManager
 import android.os.AsyncTask
+import android.util.Log
+import android.util.SparseIntArray
+import android.view.Surface
 import java.io.File
 import java.io.FileOutputStream
 import java.util.*
+import android.opengl.ETC1.getHeight
+import android.opengl.ETC1.getWidth
+import android.R.attr.rotation
+import android.graphics.Matrix
+
 
 class TempPhotoStorageService(private val photoStorageCompletion: PhotoStorageCompletion, private val photoRetrievalCompletion: PhotoRetrievalCompletion): PhotoStorageProvider {
     override fun storePhoto(withByteArray: ByteArray, inFolder: File) {
@@ -14,8 +27,8 @@ class TempPhotoStorageService(private val photoStorageCompletion: PhotoStorageCo
         writer.execute(withByteArray)
     }
 
-    override fun retrievePhoto(from: File) {
-        val retriever = TempPhotoRetriever(from, photoRetrievalCompletion)
+    override fun retrievePhoto(from: File, usingRotation: Int) {
+        val retriever = TempPhotoRetriever(from, usingRotation, photoRetrievalCompletion)
         retriever.execute()
     }
 
@@ -49,7 +62,7 @@ private class TempPhotoWriter(private val file: File, private val photoStorageCo
 
 }
 
-private class TempPhotoRetriever(private val file: File, private val retrievalCompletion: PhotoRetrievalCompletion): AsyncTask<Void, Void, Bitmap?>() {
+private class TempPhotoRetriever(private val file: File, private val rotation: Int, private val retrievalCompletion: PhotoRetrievalCompletion): AsyncTask<Void, Void, Bitmap?>() {
 
     override fun doInBackground(vararg params: Void?): Bitmap? {
         if ( !file.exists() ) {
@@ -57,7 +70,18 @@ private class TempPhotoRetriever(private val file: File, private val retrievalCo
         }
 
         try {
-            return BitmapFactory.decodeFile(file.absolutePath)
+            val options = BitmapFactory.Options()
+            options.inSampleSize = calculateInSampleSize(3264, 2448, 1280, 720)
+            val bitmap = BitmapFactory.decodeFile(file.absolutePath, options)
+            return if (rotation != 0) {
+                val matrix = Matrix()
+                matrix.postRotate(rotation.toFloat())
+                val rotatedImg = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+                bitmap.recycle()
+                rotatedImg
+            } else {
+                bitmap
+            }
         } catch (e: Exception) {
             return null
         }
@@ -67,6 +91,23 @@ private class TempPhotoRetriever(private val file: File, private val retrievalCo
         super.onPostExecute(result)
 
         retrievalCompletion(result)
+    }
+
+    private fun calculateInSampleSize(curWidth: Int, curHeight: Int, reqWidth: Int, reqHeight: Int): Int {
+        var inSampleSize = 0
+
+        if (curHeight > reqHeight || curWidth > reqWidth) {
+            val heightRatio = Math.round(curHeight.toFloat() / reqHeight.toFloat())
+            val widthRatio = Math.round(curHeight.toFloat() / reqWidth.toFloat())
+            inSampleSize = if (heightRatio < widthRatio) heightRatio else widthRatio
+
+            val totalPixels = (curWidth* curHeight).toFloat()
+            val totalReqPixelsCap = (reqWidth * reqHeight * 2).toFloat()
+            while (totalPixels / (inSampleSize * inSampleSize) > totalReqPixelsCap) {
+                inSampleSize++
+            }
+        }
+        return inSampleSize
     }
 
 }

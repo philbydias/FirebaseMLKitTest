@@ -1,13 +1,19 @@
 package com.test.firebasemlkit.controllers
 
 import android.Manifest
+import android.app.Activity
+import android.content.Context
 import android.content.pm.PackageManager
 import android.hardware.Camera
+import android.hardware.camera2.CameraCharacteristics
+import android.hardware.camera2.CameraManager
 import android.os.Bundle
 import android.support.v4.app.ActivityCompat
 import android.support.v4.content.ContextCompat
 import android.support.v7.app.AppCompatActivity
 import android.util.Log
+import android.util.SparseIntArray
+import android.view.Surface
 import android.view.View
 import android.widget.Toast
 import com.test.firebasemlkit.R
@@ -28,10 +34,11 @@ class CameraActivity: AppCompatActivity() {
             Log.d("AppLogs", "File stored at: $successFilePath")
             successFilePath?.let { filePath ->
                 Log.d("AppLogs", "Retrieving from ${File(filePath)}")
-                storageProvider?.retrievePhoto(File(filePath))
+//                storageProvider?.retrievePhoto(File(filePath), getRotationCompensation())
             }
         }, { bitmap ->
-            Log.d("AppLogs", "Retrieved bitmap: ${bitmap == null}")
+//            Log.d("AppLogs", "Retrieved bitmap: ${bitmap == null}")
+            Log.d("AppLogs", "Bitmap dimens: ${bitmap?.width}, ${bitmap?.height}")
             bitmap.let { validBitmap ->
                 image_view_camera_photo.setImageBitmap(validBitmap)
             }
@@ -74,6 +81,25 @@ class CameraActivity: AppCompatActivity() {
         }
     }
 
+    private fun getRotationCompensation(activity: Activity, context: Context): Int {
+        val ORIENTATIONS = SparseIntArray()
+        ORIENTATIONS.append(Surface.ROTATION_0, 90)
+        ORIENTATIONS.append(Surface.ROTATION_90, 0)
+        ORIENTATIONS.append(Surface.ROTATION_180, 270)
+        ORIENTATIONS.append(Surface.ROTATION_270, 180)
+
+        val deviceRotation = activity.windowManager.defaultDisplay.rotation
+        var rotationCompensation = ORIENTATIONS.get(deviceRotation)
+
+        val cameraManager = context.getSystemService(CAMERA_SERVICE) as CameraManager
+        val cameraId = cameraManager.cameraIdList.first()
+        val sensorOrientation = cameraManager
+            .getCameraCharacteristics(cameraId)
+            .get(CameraCharacteristics.SENSOR_ORIENTATION)!!
+        rotationCompensation = (rotationCompensation + sensorOrientation + 270) % 360
+        return rotationCompensation
+    }
+
     private fun initializeCamera() {
         preview = getCameraInstance()?.let {
             CameraPreviewView(this, it)
@@ -83,11 +109,14 @@ class CameraActivity: AppCompatActivity() {
         }
 
         button_camera_take_photo.setOnClickListener { _: View ->
-            preview?.let { previewView ->
-                storageProvider?.let { provider ->
-                    previewView.takeCurrentPicture(applicationContext.filesDir, provider)
-                }
-            }
+            val rotationComp = getRotationCompensation(this@CameraActivity, applicationContext)
+            storageProvider?.retrievePhoto(File("/data/user/0/com.test.firebasemlkit/files/1543515328964.jpg"), rotationComp)
+
+//            preview?.let { previewView ->
+//                storageProvider?.let { provider ->
+//                    previewView.takeCurrentPicture(applicationContext.filesDir, provider)
+//                }
+//            }
         }
     }
 

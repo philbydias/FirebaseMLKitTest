@@ -68,7 +68,7 @@ private class TempPhotoRetriever(private val file: File, private val rotation: I
             inputStream.close()
 
             val options = BitmapFactory.Options()
-            options.inSampleSize = calculateInSampleSize(optionsScan.outWidth, optionsScan.outHeight, 720, 1280)
+            options.inSampleSize = calculateInSampleSize(optionsScan.outWidth, optionsScan.outHeight, 1080, 1920)
             val bitmap = BitmapFactory.decodeFile(file.absolutePath, options)
             return if (rotation != 0) {
                 val matrix = Matrix()

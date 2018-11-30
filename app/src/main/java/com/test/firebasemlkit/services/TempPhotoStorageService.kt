@@ -88,6 +88,7 @@ private class TempPhotoRetriever(private val file: File, private val rotation: I
         super.onPostExecute(result)
 
         retrievalCompletion(result)
+        file.delete()
     }
 
     private fun calculateInSampleSize(curWidth: Int, curHeight: Int, reqWidth: Int, reqHeight: Int): Int {

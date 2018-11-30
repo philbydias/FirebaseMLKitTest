@@ -27,7 +27,6 @@ class GoogleTTSTextResultService(context: Context): TextResultConsumer {
 
                 override fun onStart(utteranceId: String?) {
                 }
-
             })
         })
     }
@@ -39,6 +38,14 @@ class GoogleTTSTextResultService(context: Context): TextResultConsumer {
     override fun consume(text: String) {
         val bundle = Bundle()
         bundle.putString(TextToSpeech.Engine.KEY_PARAM_STREAM, AudioManager.STREAM_MUSIC.toString())
-        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, bundle, null)
+        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, bundle, "textReader")
+    }
+
+    override fun abort() {
+        tts?.let {
+            if ( it.isSpeaking ) {
+                it.stop()
+            }
+        }
     }
 }

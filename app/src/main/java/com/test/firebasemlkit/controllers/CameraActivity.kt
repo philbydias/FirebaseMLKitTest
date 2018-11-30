@@ -24,6 +24,7 @@ import java.io.File
 class CameraActivity: AppCompatActivity() {
     private val codePermissionsCamera = 1
 
+    private var bProcessVision: Boolean = false
     private var textResultConsumer: TextResultConsumer? = null
     private var storageProvider: PhotoStorageProvider? = null
     private var photoProcessingProvider: PhotoProcessingProvider? = null
@@ -36,7 +37,11 @@ class CameraActivity: AppCompatActivity() {
 
         textResultConsumer = GoogleTTSTextResultService(applicationContext)
         textResultConsumer?.registerCompletionResponder {
-
+            if ( bProcessVision ) {
+                storageProvider?.let { provider ->
+                    preview?.takeCurrentPicture(applicationContext.filesDir, provider)
+                }
+            }
         }
 
         storageProvider = TempPhotoStorageService( { successFilePath ->
@@ -45,21 +50,30 @@ class CameraActivity: AppCompatActivity() {
             }
         }, { bitmap ->
             bitmap?.let { validBitmap ->
-                image_view_camera_photo.setImageBitmap(validBitmap)
-                photoProcessingProvider?.translateToText(validBitmap)
+                if ( bProcessVision ) {
+                    photoProcessingProvider?.translateToText(validBitmap)
+                }
             }
         })
 
         photoProcessingProvider = FirebasePhotoService()
         photoProcessingProvider?.registerCompletionResponder {text: String? ->
             text?.let {
-                textResultConsumer?.consume(it)
+                if ( bProcessVision ) {
+                    textResultConsumer?.consume(it)
+                }
             }
         }
 
-        button_camera_take_photo.setOnClickListener { _: View ->
-            storageProvider?.let { provider ->
-                preview?.takeCurrentPicture(applicationContext.filesDir, provider)
+        btn_camera_take_photo.setOnClickListener { _: View ->
+            bProcessVision = !bProcessVision
+
+            if ( bProcessVision ) {
+                storageProvider?.let { provider ->
+                    preview?.takeCurrentPicture(applicationContext.filesDir, provider)
+                }
+            } else {
+                textResultConsumer?.abort()
             }
         }
     }

@@ -4,7 +4,7 @@ import android.content.Context
 import android.hardware.Camera
 import android.view.SurfaceHolder
 import android.view.SurfaceView
-import com.test.firebasemlkit.use_cases.PhotoStorageProvider
+import com.test.firebasemlkit.services.PhotoStorageProvider
 import java.io.File
 import java.io.IOException
 

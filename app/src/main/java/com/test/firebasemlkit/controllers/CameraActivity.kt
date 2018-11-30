@@ -7,25 +7,16 @@ import android.content.pm.PackageManager
 import android.hardware.Camera
 import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraManager
-import android.media.AudioManager
 import android.os.Bundle
-import android.speech.tts.TextToSpeech
-import android.speech.tts.UtteranceProgressListener
 import android.support.v4.app.ActivityCompat
 import android.support.v4.content.ContextCompat
 import android.support.v7.app.AppCompatActivity
-import android.util.Log
 import android.util.SparseIntArray
 import android.view.Surface
 import android.view.View
 import android.widget.Toast
-import com.google.firebase.FirebaseApp
-import com.google.firebase.ml.vision.FirebaseVision
-import com.google.firebase.ml.vision.common.FirebaseVisionImage
-import com.google.firebase.ml.vision.text.FirebaseVisionText
 import com.test.firebasemlkit.R
-import com.test.firebasemlkit.use_cases.PhotoStorageProvider
-import com.test.firebasemlkit.use_cases.TempPhotoStorageService
+import com.test.firebasemlkit.services.*
 import com.test.firebasemlkit.views.CameraPreviewView
 import kotlinx.android.synthetic.main.activity_camera.*
 import java.io.File
@@ -33,11 +24,21 @@ import java.io.File
 class CameraActivity: AppCompatActivity() {
     private val codePermissionsCamera = 1
 
-    private var tts: TextToSpeech? = null
+    private var textResultConsumer: TextResultConsumer? = null
     private var storageProvider: PhotoStorageProvider? = null
+    private var photoProcessingProvider: PhotoProcessingProvider? = null
+
     private var preview: CameraPreviewView? = null
 
-    init {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_camera)
+
+        textResultConsumer = GoogleTTSTextResultService(applicationContext)
+        textResultConsumer?.registerCompletionResponder {
+
+        }
+
         storageProvider = TempPhotoStorageService( { successFilePath ->
             successFilePath?.let { filePath ->
                 storageProvider?.retrievePhoto(File(filePath), getRotationCompensation(this@CameraActivity, applicationContext))
@@ -45,41 +46,16 @@ class CameraActivity: AppCompatActivity() {
         }, { bitmap ->
             bitmap?.let { validBitmap ->
                 image_view_camera_photo.setImageBitmap(validBitmap)
-                val fbVisionImage = FirebaseVisionImage.fromBitmap(validBitmap)
-                val detector = FirebaseVision.getInstance().onDeviceTextRecognizer
-                detector.processImage(fbVisionImage).addOnSuccessListener { firebaseVisionText: FirebaseVisionText? ->
-                    firebaseVisionText?.text?.let {
-                        tts = TextToSpeech(applicationContext, object: TextToSpeech.OnInitListener {
-                            override fun onInit(status: Int) {
-                                val map = hashMapOf( Pair(TextToSpeech.Engine.KEY_PARAM_STREAM, AudioManager.STREAM_ALARM.toString()) )
-                                tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
-                                    override fun onError(utteranceId: String?) {
-                                    }
-
-                                    override fun onDone(utteranceId: String?) {
-                                        Log.d("AppLogs", "Utterance done.")
-                                    }
-
-                                    override fun onStart(utteranceId: String?) {
-                                        Log.d("AppLogs", "Utterance started.")
-                                    }
-
-                                })
-                                tts?.speak(it, TextToSpeech.QUEUE_FLUSH, map)
-                            }
-
-                        })
-                    }
-
-                } .addOnFailureListener { _: java.lang.Exception ->
-                }
+                photoProcessingProvider?.translateToText(validBitmap)
             }
         })
-    }
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_camera)
+        photoProcessingProvider = FirebasePhotoService()
+        photoProcessingProvider?.registerCompletionResponder {text: String? ->
+            text?.let {
+                textResultConsumer?.consume(it)
+            }
+        }
 
         button_camera_take_photo.setOnClickListener { _: View ->
             storageProvider?.let { provider ->

@@ -1,4 +1,4 @@
-package com.test.firebasemlkit.use_cases
+package com.test.firebasemlkit.services
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory

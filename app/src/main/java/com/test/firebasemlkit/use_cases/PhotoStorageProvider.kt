@@ -7,6 +7,6 @@ typealias PhotoStorageCompletion = (path: String?) -> Unit
 typealias PhotoRetrievalCompletion = (bitmap: Bitmap?) -> Unit
 
 interface PhotoStorageProvider {
-    fun storePhoto(withByteArray: ByteArray, inFolder: File)
+    fun storePhoto(withByteArray: ByteArray, withCameraSize: android.hardware.Camera.Size, inFolder: File)
     fun retrievePhoto(from: File, usingRotation: Int)
 }

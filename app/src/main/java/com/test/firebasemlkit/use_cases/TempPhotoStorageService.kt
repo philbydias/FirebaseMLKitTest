@@ -3,6 +3,7 @@ package com.test.firebasemlkit.use_cases
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
+import android.hardware.Camera
 import android.os.AsyncTask
 import java.io.File
 import java.io.FileOutputStream
@@ -10,9 +11,10 @@ import java.util.*
 
 
 class TempPhotoStorageService(private val photoStorageCompletion: PhotoStorageCompletion, private val photoRetrievalCompletion: PhotoRetrievalCompletion): PhotoStorageProvider {
-    override fun storePhoto(withByteArray: ByteArray, inFolder: File) {
+
+    override fun storePhoto(withByteArray: ByteArray, withCameraSize: android.hardware.Camera.Size, inFolder: File) {
         val tempFile = File(inFolder, "${Date().time}.jpg")
-        val writer = TempPhotoWriter(tempFile, photoStorageCompletion)
+        val writer = TempPhotoWriter(tempFile, withCameraSize, photoStorageCompletion)
         writer.execute(withByteArray)
     }
 
@@ -23,7 +25,7 @@ class TempPhotoStorageService(private val photoStorageCompletion: PhotoStorageCo
 
 }
 
-private class TempPhotoWriter(private val file: File, private val photoStorageCompletion: PhotoStorageCompletion): AsyncTask<ByteArray, Void, String?>() {
+private class TempPhotoWriter(private val file: File, private val cameraSize: Camera.Size, private val photoStorageCompletion: PhotoStorageCompletion): AsyncTask<ByteArray, Void, String?>() {
 
     override fun doInBackground(vararg params: ByteArray?): String? {
         if ( params.isEmpty() ) {

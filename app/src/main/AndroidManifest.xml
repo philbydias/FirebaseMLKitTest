@@ -15,7 +15,7 @@
             android:theme="@style/AppTheme">
         <meta-data
                 android:name="com.google.firebase.ml.vision.DEPENDENCIES"
-                android:value="ocr,text" />
+                android:value="ocr" />
         <activity
                 android:name=".controllers.CameraActivity"
                 android:screenOrientation="portrait">

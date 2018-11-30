@@ -54,7 +54,7 @@ class CameraPreviewView(context: Context, private val camera: Camera) : SurfaceV
     fun takeCurrentPicture(folder: File, storageProvider: PhotoStorageProvider) {
         camera.takePicture(null, null, { bytes: ByteArray, camera: Camera ->
             camera.startPreview()
-            storageProvider.storePhoto(bytes, folder)
+            storageProvider.storePhoto(bytes, camera.parameters.previewSize, folder)
         })
     }
 

@@ -1,8 +1,6 @@
 package com.test.firebasemlkit.views
 
 import android.content.Context
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.hardware.Camera
 import android.view.SurfaceHolder
 import android.view.SurfaceView

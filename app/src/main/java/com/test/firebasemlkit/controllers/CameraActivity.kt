@@ -48,6 +48,15 @@ class CameraActivity: AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_camera)
+
+        button_camera_take_photo.setOnClickListener { _: View ->
+            val rotationComp = getRotationCompensation(this@CameraActivity, applicationContext)
+            storageProvider?.retrievePhoto(File("/data/user/0/com.test.firebasemlkit/files/1543515328964.jpg"), rotationComp)
+
+//            storageProvider?.let { provider ->
+//                preview?.takeCurrentPicture(applicationContext.filesDir, provider)
+//            }
+        }
     }
 
     override fun onResume() {
@@ -82,14 +91,14 @@ class CameraActivity: AppCompatActivity() {
     }
 
     private fun getRotationCompensation(activity: Activity, context: Context): Int {
-        val ORIENTATIONS = SparseIntArray()
-        ORIENTATIONS.append(Surface.ROTATION_0, 90)
-        ORIENTATIONS.append(Surface.ROTATION_90, 0)
-        ORIENTATIONS.append(Surface.ROTATION_180, 270)
-        ORIENTATIONS.append(Surface.ROTATION_270, 180)
+        val orientations = SparseIntArray()
+        orientations.append(Surface.ROTATION_0, 90)
+        orientations.append(Surface.ROTATION_90, 0)
+        orientations.append(Surface.ROTATION_180, 270)
+        orientations.append(Surface.ROTATION_270, 180)
 
         val deviceRotation = activity.windowManager.defaultDisplay.rotation
-        var rotationCompensation = ORIENTATIONS.get(deviceRotation)
+        var rotationCompensation = orientations.get(deviceRotation)
 
         val cameraManager = context.getSystemService(CAMERA_SERVICE) as CameraManager
         val cameraId = cameraManager.cameraIdList.first()
@@ -106,17 +115,6 @@ class CameraActivity: AppCompatActivity() {
         }
         preview?.also {
             layout_camera_preview.addView(it)
-        }
-
-        button_camera_take_photo.setOnClickListener { _: View ->
-            val rotationComp = getRotationCompensation(this@CameraActivity, applicationContext)
-            storageProvider?.retrievePhoto(File("/data/user/0/com.test.firebasemlkit/files/1543515328964.jpg"), rotationComp)
-
-//            preview?.let { previewView ->
-//                storageProvider?.let { provider ->
-//                    previewView.takeCurrentPicture(applicationContext.filesDir, provider)
-//                }
-//            }
         }
     }
 

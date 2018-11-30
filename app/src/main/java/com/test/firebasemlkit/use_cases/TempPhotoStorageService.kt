@@ -1,23 +1,12 @@
 package com.test.firebasemlkit.use_cases
 
-import android.app.Activity
-import android.content.Context
-import android.content.Context.CAMERA_SERVICE
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.hardware.camera2.CameraCharacteristics
-import android.hardware.camera2.CameraManager
+import android.graphics.Matrix
 import android.os.AsyncTask
-import android.util.Log
-import android.util.SparseIntArray
-import android.view.Surface
 import java.io.File
 import java.io.FileOutputStream
 import java.util.*
-import android.opengl.ETC1.getHeight
-import android.opengl.ETC1.getWidth
-import android.R.attr.rotation
-import android.graphics.Matrix
 
 
 class TempPhotoStorageService(private val photoStorageCompletion: PhotoStorageCompletion, private val photoRetrievalCompletion: PhotoRetrievalCompletion): PhotoStorageProvider {
@@ -70,8 +59,14 @@ private class TempPhotoRetriever(private val file: File, private val rotation: I
         }
 
         try {
+            val optionsScan = BitmapFactory.Options()
+            optionsScan.inJustDecodeBounds = true
+            val inputStream = file.inputStream()
+            BitmapFactory.decodeStream(inputStream, null, optionsScan)
+            inputStream.close()
+
             val options = BitmapFactory.Options()
-            options.inSampleSize = calculateInSampleSize(3264, 2448, 1280, 720)
+            options.inSampleSize = calculateInSampleSize(optionsScan.outWidth, optionsScan.outHeight, 720, 1280)
             val bitmap = BitmapFactory.decodeFile(file.absolutePath, options)
             return if (rotation != 0) {
                 val matrix = Matrix()
@@ -94,7 +89,7 @@ private class TempPhotoRetriever(private val file: File, private val rotation: I
     }
 
     private fun calculateInSampleSize(curWidth: Int, curHeight: Int, reqWidth: Int, reqHeight: Int): Int {
-        var inSampleSize = 0
+        var inSampleSize = 1
 
         if (curHeight > reqHeight || curWidth > reqWidth) {
             val heightRatio = Math.round(curHeight.toFloat() / reqHeight.toFloat())
